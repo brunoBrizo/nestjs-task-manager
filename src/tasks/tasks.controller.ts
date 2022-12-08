@@ -9,6 +9,7 @@ import {
   Patch,
   Query,
   UseGuards,
+  Logger,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { GetUser } from 'src/auth/get-user.decorator';
@@ -21,6 +22,7 @@ import { TasksService } from './tasks.service';
 @Controller('tasks')
 @UseGuards(AuthGuard())
 export class TasksController {
+  private logger = new Logger('TasksController');
   constructor(private taskService: TasksService) {}
 
   @Get()
@@ -28,6 +30,11 @@ export class TasksController {
     @Query() filterDto: GetTasksFilterDto,
     @GetUser() user: User,
   ): Promise<Task[]> {
+    this.logger.debug(
+      `Getting all tasks for user ${user.id} with filters: ${JSON.stringify(
+        filterDto,
+      )}`,
+    );
     const result = this.taskService.getAllTasks(filterDto, user);
 
     return result;
@@ -38,6 +45,7 @@ export class TasksController {
     @Param('id') id: string,
     @GetUser() user: User,
   ): Promise<Task> {
+    this.logger.debug(`Getting task ${id} for user ${user.id}}`);
     const task = await this.taskService.getTaskById(id, user);
 
     return task;
@@ -48,6 +56,11 @@ export class TasksController {
     @Body() createTaskDto: CreateTaskDto,
     @GetUser() user: User,
   ): Promise<Task> {
+    this.logger.debug(
+      `Create task for user ${user.id}. Task data: ${JSON.stringify(
+        createTaskDto,
+      )}`,
+    );
     const task = await this.taskService.createTask(createTaskDto, user);
 
     return task;
@@ -58,6 +71,7 @@ export class TasksController {
     @Param('id') id: string,
     @GetUser() user: User,
   ): Promise<void> {
+    this.logger.debug(`Deleting task ${id} for user ${user.id}}`);
     await this.taskService.deleteTask(id, user);
   }
 
@@ -67,6 +81,9 @@ export class TasksController {
     @Body() { status }: UpdateTaskStatusDto,
     @GetUser() user: User,
   ): Promise<Task> {
+    this.logger.debug(
+      `Updating task ${id} status for user ${user.id}. New status: ${status}}`,
+    );
     const task = await this.taskService.updateTaskStatus(id, status, user);
 
     return task;

@@ -1,6 +1,10 @@
 import { User } from './../auth/user.entity';
 import { GetTasksFilterDto } from './dto/get-tasks-filter.dto';
-import { Injectable } from '@nestjs/common';
+import {
+  Injectable,
+  InternalServerErrorException,
+  Logger,
+} from '@nestjs/common';
 import { Brackets, DataSource, Repository } from 'typeorm';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { Task } from './tasks.entity';
@@ -8,6 +12,7 @@ import { TaskStatus } from './tasks-status.enum';
 
 @Injectable()
 export class TasksRepository extends Repository<Task> {
+  private logger = new Logger('TasksRepository', { timestamp: true });
   constructor(private dataSource: DataSource) {
     super(Task, dataSource.createEntityManager());
   }
@@ -32,9 +37,13 @@ export class TasksRepository extends Repository<Task> {
       );
     }
 
-    const tasks = await query.getMany();
-
-    return tasks;
+    try {
+      const tasks = await query.getMany();
+      return tasks;
+    } catch (error) {
+      this.logger.error(`Error getting tasks`, error);
+      throw new InternalServerErrorException();
+    }
   }
 
   async createTask(
@@ -48,13 +57,22 @@ export class TasksRepository extends Repository<Task> {
       user,
     });
 
-    await this.save(task);
-    return task;
+    try {
+      await this.save(task);
+      return task;
+    } catch (error) {
+      this.logger.error(`Error saving a task`, error);
+      throw new InternalServerErrorException();
+    }
   }
 
   async getTaskById(id: string, user: User): Promise<Task> {
-    const task = await this.findOne({ where: { id, user } });
-
-    return task;
+    try {
+      const task = await this.findOne({ where: { id, user } });
+      return task;
+    } catch (error) {
+      this.logger.error(`Error getting a task by Id`, error);
+      throw new InternalServerErrorException();
+    }
   }
 }
